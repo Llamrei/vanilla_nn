@@ -18,6 +18,9 @@ class Sum(Function):
         self.func = lambda x, y: x + y
         self.args = (a, b)
 
+    def __str__(self):
+        return "Sum"
+
     def diff(self, with_respect_to, at):
         print(
             f"d/d{with_respect_to}({self.args[0]}) + d/d{with_respect_to}({self.args[1]}) at {at}"
@@ -32,6 +35,9 @@ class Prod(Function):
         self.func = lambda x, y: x * y
         self.args = (a, b)
 
+    def __str__(self):
+        return "Prod"
+
     def diff(self, with_respect_to, at):
         print(
             f"d/d{with_respect_to}({self.args[0]})*{self.args[1]} + d/d{with_respect_to}({self.args[1]})*{self.args[0]}, at {at}"
@@ -41,20 +47,29 @@ class Prod(Function):
         ) + self.args[1].diff(with_respect_to, at) * self.args[0].eval(at)
 
 
-class Const(Function):
+class Const:
     def __init__(self, a):
         # Only allowed numbers
-        self.func = lambda x: x
-        self.args = (a,)
+        self.constant = a
+
+    def __str__(self):
+        return f"Const ({self.constant})"
+
+    def eval(self, at):
+        print(f"Constant value is {self.constant} at {at}")
+        return self.constant
 
     def diff(self, with_respect_to, at):
-        print(f"Derivative of a constant ({self.args[0]}) is 0")
+        print(f"Derivative of a constant ({self.constant}) is 0")
         return 0
 
 
 class Var:
     def __init__(self, name):
         self.name = name
+
+    def __str__(self):
+        return f"Var {self.name}"
 
     def eval(self, at):
         print(f"Value of variable {self.name} is {at[self.name]}")
@@ -70,6 +85,7 @@ ex = Sum(Prod(Var("x"), Const(5)), Prod(Var("x"), Var("x")))
 # We want:
 # ex -> 5x + x^2
 # ex.diff('x',2) -> 5 + 2x -> 5 + 2*2 = 9
+print("Differentiate 5x + x^2")
 print(ex.diff("x", {"x": 2}))
 
 ex2 = Sum(Prod(Var("x"), Const(5)), Prod(Var("x"), Var("y")))
