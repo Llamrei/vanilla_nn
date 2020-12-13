@@ -1,3 +1,9 @@
+# Dad: think about defining Name object and likewise +,-,/,x
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class Function:
     # func
     # args
@@ -10,20 +16,29 @@ class Function:
     def diff(self, with_respect_to, at):
         # At is a dictionary containing values of all variables
         # e.g. {'x':2,'y':10}
+        # This needs to return a function
+        # How do we make it build its own function?!!?
         raise NotImplementedError
 
 
 class Sum(Function):
     def __init__(self, a, b):
-        self.func = lambda x, y: x + y
+        def fn(x, y):
+            return x + y
+
+        self.func = fn
         self.args = (a, b)
 
     def __str__(self):
-        return "Sum"
+        return f"Sum({self.args[0]}, {self.args[1]})"
+
+    def eval(self, at):
+        logger.debug(f"Evaluating {self.args[0]}+{self.args[1]}")
+        return self.args[0].eval(at) + self.args[1].eval(at)
 
     def diff(self, with_respect_to, at):
-        print(
-            f"d/d{with_respect_to}({self.args[0]}) + d/d{with_respect_to}({self.args[1]}) at {at}"
+        logger.debug(
+            f"d/d{with_respect_to}({self.args[0]}) + d/d{with_respect_to}({self.args[1]})"
         )
         return self.args[0].diff(with_respect_to, at) + self.args[1].diff(
             with_respect_to, at
@@ -36,11 +51,15 @@ class Prod(Function):
         self.args = (a, b)
 
     def __str__(self):
-        return "Prod"
+        return f"Prod({self.args[0]},{self.args[1]})"
+
+    def eval(self, at):
+        logger.debug(f"Evaluating {self.args[0]}*{self.args[1]}")
+        return self.args[0].eval(at) * self.args[1].eval(at)
 
     def diff(self, with_respect_to, at):
-        print(
-            f"d/d{with_respect_to}({self.args[0]})*{self.args[1]} + d/d{with_respect_to}({self.args[1]})*{self.args[0]}, at {at}"
+        logger.debug(
+            f"d/d{with_respect_to}({self.args[0]})*{self.args[1]} + d/d{with_respect_to}({self.args[1]})*{self.args[0]}"
         )
         return self.args[0].diff(with_respect_to, at) * self.args[1].eval(
             at
@@ -53,14 +72,14 @@ class Const:
         self.constant = a
 
     def __str__(self):
-        return f"Const ({self.constant})"
+        return f"Const({self.constant})"
 
     def eval(self, at):
-        print(f"Constant value is {self.constant} at {at}")
+        logger.debug(f"Constant value is {self.constant} at {at}")
         return self.constant
 
     def diff(self, with_respect_to, at):
-        print(f"Derivative of a constant ({self.constant}) is 0")
+        logger.debug(f"Derivative of a constant ({self.constant}) is 0")
         return 0
 
 
@@ -69,27 +88,13 @@ class Var:
         self.name = name
 
     def __str__(self):
-        return f"Var {self.name}"
+        return f"Var({self.name})"
 
     def eval(self, at):
-        print(f"Value of variable {self.name} is {at[self.name]}")
+        logger.debug(f"Value of variable {self.name} is {at[self.name]}")
         return at[self.name]
 
     def diff(self, with_respect_to, at):
         deriv = 1 if with_respect_to == self.name else 0
-        print(f"Derivative of {self.name} w.r.t. {with_respect_to} is {deriv}")
+        logger.debug(f"Derivative of {self.name} w.r.t. {with_respect_to} is {deriv}")
         return deriv
-
-
-ex = Sum(Prod(Var("x"), Const(5)), Prod(Var("x"), Var("x")))
-# We want:
-# ex -> 5x + x^2
-# ex.diff('x',2) -> 5 + 2x -> 5 + 2*2 = 9
-print("Differentiate 5x + x^2")
-print(ex.diff("x", {"x": 2}))
-
-ex2 = Sum(Prod(Var("x"), Const(5)), Prod(Var("x"), Var("y")))
-# We want:
-# ex2 -> 5x + xy
-# ex2.diff("y", {"x": 7, "y": 10}) -> x -> 7
-print(ex2.diff("y", {"x": 7, "y": 10}))
