@@ -82,9 +82,7 @@ class Layer:
             prev_layer = self
             while prev_layer:
                 for weight in prev_layer.weights:
-                    grad[neuron_idx][weight] = prev_layer.neurons[neuron_idx].diff(
-                        weight, at
-                    )
+                    grad[neuron_idx][weight] = self.neurons[neuron_idx].diff(weight, at)
                 prev_layer = prev_layer.prev_layer
         return grad
 
@@ -119,12 +117,22 @@ class Loss(Layer):
             self.neurons[0] = self.neurons[0](label=label)
         return self.neurons[0].eval(at)
 
-    def train(self, inputs, label, learning_rate=0.01, threshold=0.01):
+    def train(
+        self,
+        inputs,
+        label,
+        learning_rate=0.001,
+        perc_threshold=0.01,
+        abs_threshold=1e-3,
+    ):
         if isinstance(self.neurons[0], partial):
             self.neurons[0] = self.neurons[0](label=label)
-        print(f"Training with a weight change threshold of {threshold*100}%")
+        print(
+            f"Training with a weight change threshold of {perc_threshold*100}% | {abs_threshold}"
+        )
 
         training = True
+        loss = 1e10
         dist = 1e10
         while training:
             orig_weights = self.all_layer_weights
@@ -134,13 +142,20 @@ class Loss(Layer):
                 for key, val in orig_weights.items()
             }
             self.set_all_layer_weights(new_weights)
-            new_dist = manhattan(new_weights, orig_weights)
-            percentage_dist_change = (dist - new_dist) / dist
             prediction = self.prev_layer.neurons[0].eval({**inputs, **new_weights})
-            loss = self.neurons[0].eval({**inputs, **new_weights})
+            new_loss = self.neurons[0].eval({**inputs, **new_weights})
+            new_dist = manhattan(orig_weights, new_weights)
+            percentage_loss_change = abs((new_loss - loss) / loss)
+            percentage_dist_change = abs((new_dist - dist) / dist)
+
             print(
-                f"\r Prediction: {prediction}|Loss: {loss}| % weight change : {percentage_dist_change}"
+                f"\r Prediction: {prediction}|Loss: {loss}| %d(Loss) : {percentage_loss_change} | weight_movement: {percentage_dist_change}"
             )
 
-            training = False if percentage_dist_change < threshold else True
+            training = (
+                False
+                if percentage_loss_change < perc_threshold or loss < abs_threshold
+                else True
+            )
+            loss = new_loss
             dist = new_dist
