@@ -1,0 +1,2 @@
+An implementation of autodiff with operations of sum, product and negatives (therefore MSE) and logic
+for building neural networks - all in Vanilla python, no third party libraries! For the sake of learning.
