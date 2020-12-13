@@ -13,7 +13,5 @@ Condense = Layer(1)
 Condense.dense_append_to(Hidden)
 Output = Loss()
 Output.append_to(Condense)
-weights = Output.all_layer_weights
-Output.diff("w2_7", {"x": 7, "y": 10, **weights}, 15)
-
+# Fit 15 to inputs (5,10)
 Output.train({"x": 5, "y": 10}, 15)
