@@ -117,6 +117,6 @@ class Var:
         return deriv
 
 
-MSE = lambda label, prediction: Prod(
+MSE = lambda prediction, label: Prod(
     Sum(Const(label), Neg(prediction)), Sum(Const(label), Neg(prediction))
 )

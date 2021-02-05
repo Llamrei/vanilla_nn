@@ -101,61 +101,80 @@ class Loss(Layer):
 
     def append_to(self, prev_layer):
         self.prev_layer = prev_layer
-        self.neurons[0] = partial(self.loss_function, prediction=prev_layer.neurons[0])
+        self.neuron_generator = partial(self.loss_function, prediction=prev_layer.neurons[0])
+        # self.neurons[0] = partial(self.loss_function, prediction=prev_layer.neurons[0])
 
     def dense_append_to(self, prev_layer):
         assert prev_layer.num_neurons == 1
         return self.append_to(prev_layer)
 
-    def diff(self, wrt, at, label):
-        if isinstance(self.neurons[0], partial):
-            self.neurons[0] = self.neurons[0](label=label)
-        return self.neurons[0].diff(wrt, at)
+    # def diff(self, wrt, at, label):
+    #     # if isinstance(self.neurons[0], partial):
+    #     #     self.neurons[0] = self.neurons[0](label=label)
+    #     return self.neurons[0].diff(wrt, at, label=label)
 
-    def eval(self, at, label):
-        if isinstance(self.neurons[0], partial):
-            self.neurons[0] = self.neurons[0](label=label)
-        return self.neurons[0].eval(at)
+    # def eval(self, at, label):
+    #     return self.neurons[0].eval(at, label=label)
 
     def train(
         self,
-        inputs,
-        label,
+        inputs_iter,
+        labels_iter,
+        plotter=None,
+        open_run=False,
         learning_rate=0.001,
         perc_threshold=0.01,
         abs_threshold=1e-3,
     ):
-        if isinstance(self.neurons[0], partial):
-            self.neurons[0] = self.neurons[0](label=label)
+        # if isinstance(self.neurons[0], partial):
+        #     self.neurons[0] = self.neurons[0](label=label)
         print(
-            f"Training with a weight change threshold of {perc_threshold*100}% | {abs_threshold}"
+            f"Training with a weight change threshold of {perc_threshold:}% | {abs_threshold} abs"
         )
 
         training = True
         loss = 1e10
         dist = 1e10
-        while training:
+        num_inputs = len(inputs_iter)
+        grads = [None] * num_inputs
+        while training or open_run:
             orig_weights = self.all_layer_weights
-            grad = self.layer_grad({**inputs, **orig_weights})[0]
+            for idx, inputs in enumerate(inputs_iter):
+                self.neurons[0] = self.neuron_generator(label=labels_iter[idx])
+                grads[idx] = self.layer_grad({**inputs, **orig_weights})[0]
+            grad = {
+                key: sum([g[key] for g in grads])/num_inputs 
+                for key in orig_weights
+            }
             new_weights = {
                 key: val - learning_rate * grad[key]
                 for key, val in orig_weights.items()
             }
             self.set_all_layer_weights(new_weights)
-            prediction = self.prev_layer.neurons[0].eval({**inputs, **new_weights})
-            new_loss = self.neurons[0].eval({**inputs, **new_weights})
+            new_losses = [None] * num_inputs
+            predictions = [None] * num_inputs
+            for idx, inputs in enumerate(inputs_iter):
+                predictions[idx] = self.prev_layer.neurons[0].eval({**inputs, **new_weights})
+                self.neurons[0] = self.neuron_generator(label=labels_iter[idx])
+                new_losses[idx] = self.neurons[0].eval({**inputs, **new_weights})
             new_dist = manhattan(orig_weights, new_weights)
-            percentage_loss_change = abs((new_loss - loss) / loss)
-            percentage_dist_change = abs((new_dist - dist) / dist)
+            new_loss = sum(l for l in new_losses)/num_inputs
+            
+            percentage_loss_change = (new_loss - loss) / loss * 100
+            percentage_dist_change = abs((new_dist - dist) / dist) * 100
+
+            if plotter:
+                plotter(inputs_iter,predictions)
 
             print(
-                f"\r Prediction: {prediction}|Loss: {loss}| %d(Loss) : {percentage_loss_change} | weight_movement: {percentage_dist_change}"
+                f"Average Loss: {new_loss} ({percentage_loss_change}%) | weight_movement: {percentage_dist_change}%"
             )
 
             training = (
                 False
-                if percentage_loss_change < perc_threshold or loss < abs_threshold
+                if abs(percentage_loss_change) < perc_threshold or loss < new_loss
                 else True
             )
             loss = new_loss
             dist = new_dist
+        print("Finished training")
