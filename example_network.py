@@ -16,10 +16,15 @@ Condense.dense_append_to(Hidden)
 Output = Loss()
 Output.append_to(Condense)
 
-# Fit y = x^2
+
 num_train_el = 20
 x = [{"x":i - num_train_el/2} for i in range(num_train_el+1)]
-y = [2+5*i['x'] for i in x]
+
+# Fit y = 10 + 5x
+# y = [10+5*i['x'] for i in x]
+
+# Fit y = x^3
+y = [i['x']*i['x']*i['x'] for i in x]
 
 # Fit 15 to inputs (5,10)
 import matplotlib.pyplot as plt
@@ -47,7 +52,7 @@ class TwoDPlotter:
         
 
 plotter = TwoDPlotter(x,y)
-Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
+Output.train(x, y, plotter=plotter, learning_rate=0.0001, open_run=True)
 print(
 Output.prev_layer[0].eval({"x":25, **Output.all_layer_weights})
 )
