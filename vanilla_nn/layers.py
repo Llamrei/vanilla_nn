@@ -1,4 +1,4 @@
-from .functions import Identity, PReLU, Sum
+from .functions import Identity, LReLU, PReLU, Sum
 from .functions import Prod
 from .functions import Exp
 from .functions import Const
@@ -52,7 +52,6 @@ class Layer:
             for prev_name, prev_neuron in enumerate(
                 previous_layer, previous_layer.nodes_namespace[0]
             ):  
-                param = f"a{neuron_name}"
                 weight = f"w{prev_name}_{neuron_name}"
                 bias = f"b{neuron_name}"
                 # TODO: Look into replacing linear weighting with alternative function?
@@ -60,8 +59,7 @@ class Layer:
                 weighted_previous_layer.append(Prod(prev_neuron, Var(weight)))
                 self.weights[weight] = self.weight_init_func()
                 self.weights[bias] = self.bias_init_func()
-                self.weights[param] = 0.01
-            self.neurons[neuron_idx] = PReLU(Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10))), Var(param))
+            self.neurons[neuron_idx] = LReLU(Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10))))
 
     def inputs(self, neurons):
         assert len(neurons) == self.num_neurons

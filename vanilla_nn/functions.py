@@ -174,8 +174,8 @@ class ReLU(Function):
         return self.args[0].diff(wrt,at) if self.eval(at) >= 0 else 0
 
 class LReLU(Function):
-    def __init__(self, x, param):
-        self.args = (x, param)
+    def __init__(self, x):
+        self.args = (x,)
     
     def __str__(self) -> str:
         return f"LRelu({self.args[0]})"
