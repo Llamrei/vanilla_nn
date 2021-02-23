@@ -42,14 +42,22 @@ from matplotlib.animation import FFMpegWriter
 
 class TwoDPlotter:
 #TODO: with blitting
-    def __init__(self, x, y, saving=False):
+    def __init__(self, x, y, saving=False, confusion=False):
         plt.ion()
         self.fig = plt.figure()
         self.real_ax = self.fig.subplots()
         self.real_ax.grid('both')
         plt.show()
-        new_x = [i['x'] for i in x]
-        self.real_ax.scatter(new_x,y, c='red', label='Training Data')
+        self.confusion = confusion
+        _x = [i['x'] for i in x]
+        if self.confusion:
+            self.real_ax.set_xlabel('Truth')
+            self.real_ax.set_ylabel('Prediction')
+            self.real_ax.scatter(y,y, c='red', label='Truth')
+        else:
+            self.real_ax.set_xlabel('Input')
+            self.real_ax.set_ylabel('Output')
+            self.real_ax.scatter(_x,y, c='red', label='Training Data')
         self.points = self.real_ax.scatter([],[], c='green', label='Neural Net')
         self.fig.legend()
         
@@ -62,7 +70,8 @@ class TwoDPlotter:
             self.saving = True
 
     def __call__(self, new_x, new_y):
-        new_x = [i['x'] for i in new_x]
+        if not self.confusion:
+            new_x = [i['x'] for i in new_x]
         offsets = list(zip(new_x, new_y))
         self.points.set_offsets(offsets)
         self.update_blit()

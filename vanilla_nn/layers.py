@@ -56,7 +56,8 @@ class Layer:
                 weighted_previous_layer.append(Prod(prev_neuron, Var(weight)))
                 self.weights[weight] = self.weight_init_func()
                 self.weights[bias] = self.bias_init_func()
-            self.neurons[neuron_idx] = Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10)))
+            # TODO: Get non-linearities working
+            self.neurons[neuron_idx] = ReLU(Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10))))
 
     def inputs(self, neurons):
         assert len(neurons) == self.num_neurons
@@ -128,6 +129,7 @@ class Loss(Layer):
         inputs_iter,
         labels_iter,
         plotter=None,
+        confusion=False,
         open_run=False,
         learning_rate=0.001,
         perc_threshold=0.01,
@@ -149,7 +151,10 @@ class Loss(Layer):
             predictions = [None] * num_inputs
             for idx, inputs in enumerate(inputs_iter):
                 predictions[idx] = self.prev_layer.neurons[0].eval({**inputs, **self.all_layer_weights})
-            plotter(inputs_iter,predictions)
+            if plotter.confusion:
+                plotter(labels_iter,predictions)
+            else:
+                plotter(inputs_iter,predictions)
 
         while training or open_run:
             orig_weights = self.all_layer_weights
@@ -178,7 +183,10 @@ class Loss(Layer):
             percentage_dist_change = abs((new_dist - dist) / dist) * 100
 
             if plotter:
-                plotter(inputs_iter,predictions)
+                if plotter.confusion:
+                    plotter(labels_iter,predictions)
+                else:
+                    plotter(inputs_iter,predictions)
 
             print(
                 f"Average Loss: {new_loss} ({percentage_loss_change}%) | weight_movement: {percentage_dist_change}%"
