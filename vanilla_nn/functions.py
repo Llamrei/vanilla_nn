@@ -23,6 +23,15 @@ class Function:
         # How do we make it build its own function?!!?
         raise NotImplementedError
 
+class Identity(Function):
+    def __init__(self, a):
+        self.args = (a,)
+    
+    def eval(self, at):
+        return self.args[0].eval(at)
+
+    def diff(self, wrt, at):
+        return self.args[0].diff(wrt,at)
 
 class Sum(Function):
     def __init__(self, a, b):
@@ -162,9 +171,40 @@ class ReLU(Function):
             return Const(0).eval(at)
 
     def diff(self, wrt, at):
-        return 1 if self.eval(at) >= 0 else 0
+        return self.args[0].diff(wrt,at) if self.eval(at) >= 0 else 0
 
+class LReLU(Function):
+    def __init__(self, x, param):
+        self.args = (x, param)
+    
+    def __str__(self) -> str:
+        return f"LRelu({self.args[0]})"
 
+    def eval(self, at):
+        if self.args[0].eval(at) >= 0:
+            return self.args[0].eval(at)
+        else:
+            return 0.01*self.args[0].eval(at)
+
+    def diff(self, wrt, at):
+        return self.args[0].diff(wrt,at) if self.eval(at) >= 0 else 0.01*self.args[0].diff(wrt,at)
+
+class PReLU(Function):
+    # Parameterized leaky ReLU
+    def __init__(self, x, param):
+        self.args = (x, param)
+    
+    def __str__(self) -> str:
+        return f"PRelu({self.args[0]})"
+
+    def eval(self, at):
+        if self.args[0].eval(at) >= 0:
+            return self.args[0].eval(at)
+        else:
+            return self.args[1].eval(at)*self.args[0].eval(at)
+
+    def diff(self, wrt, at):
+        return self.args[0].diff(wrt,at) if self.eval(at) >= 0 else self.args[1].eval(at)*self.args[0].diff(wrt,at)
 
 MSE = lambda prediction, label: Prod(
     Sum(Const(label), Neg(prediction)), Sum(Const(label), Neg(prediction))

@@ -1,4 +1,4 @@
-from .functions import Sum
+from .functions import Identity, PReLU, Sum
 from .functions import Prod
 from .functions import Exp
 from .functions import Const
@@ -6,6 +6,7 @@ from .functions import Var
 from .functions import Neg
 from .functions import MSE
 from .functions import ReLU
+from .functions import Identity
 from .metrics import manhattan
 
 from functools import reduce
@@ -37,6 +38,7 @@ class Layer:
         # Careful that this code is seperate from usage in the dense_append_to
         return f"{[(x, i+self.nodes_namespace[0]) for i, x in enumerate(self.neurons)]}"
 
+    # TODO: Implement passing activation function
     def dense_append_to(self, previous_layer):
         self.prev_layer = previous_layer
         self.nodes_namespace = (
@@ -49,14 +51,17 @@ class Layer:
             weighted_previous_layer = []
             for prev_name, prev_neuron in enumerate(
                 previous_layer, previous_layer.nodes_namespace[0]
-            ):
+            ):  
+                param = f"a{neuron_name}"
                 weight = f"w{prev_name}_{neuron_name}"
                 bias = f"b{neuron_name}"
+                # TODO: Look into replacing linear weighting with alternative function?
                 # weighted_previous_layer.append(Exp(prev_neuron, Var(weight)))
                 weighted_previous_layer.append(Prod(prev_neuron, Var(weight)))
                 self.weights[weight] = self.weight_init_func()
                 self.weights[bias] = self.bias_init_func()
-            self.neurons[neuron_idx] = Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10)))
+                self.weights[param] = 0.01
+            self.neurons[neuron_idx] = PReLU(Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10))), Var(param))
 
     def inputs(self, neurons):
         assert len(neurons) == self.num_neurons
@@ -109,19 +114,10 @@ class Loss(Layer):
     def append_to(self, prev_layer):
         self.prev_layer = prev_layer
         self.neuron_generator = partial(self.loss_function, prediction=prev_layer.neurons[0])
-        # self.neurons[0] = partial(self.loss_function, prediction=prev_layer.neurons[0])
 
     def dense_append_to(self, prev_layer):
         assert prev_layer.num_neurons == 1
         return self.append_to(prev_layer)
-
-    # def diff(self, wrt, at, label):
-    #     # if isinstance(self.neurons[0], partial):
-    #     #     self.neurons[0] = self.neurons[0](label=label)
-    #     return self.neurons[0].diff(wrt, at, label=label)
-
-    # def eval(self, at, label):
-    #     return self.neurons[0].eval(at, label=label)
 
     def train(
         self,
@@ -133,11 +129,12 @@ class Loss(Layer):
         perc_threshold=0.01,
         abs_threshold=1e-3,
     ):
-        # if isinstance(self.neurons[0], partial):
-        #     self.neurons[0] = self.neurons[0](label=label)
-        print(
-            f"Training with a weight change threshold of {perc_threshold:}% | {abs_threshold} abs"
-        )
+        if open_run:
+            print("Training indefinitely until KeyboardInterrupt")
+        else:
+            print(
+                f"Training with a weight change threshold of {perc_threshold:}% | {abs_threshold} abs"
+            )
 
         training = True
         loss = 1e10

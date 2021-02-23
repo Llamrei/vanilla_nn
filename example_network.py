@@ -1,8 +1,11 @@
 from vanilla_nn.layers import Layer
 from vanilla_nn.layers import Loss
 from vanilla_nn.functions import Var
+from vanilla_nn.functions import ReLU
+from vanilla_nn.functions import PReLU
 from vanilla_nn.metrics import manhattan
 
+from functools import partial
 import logging
 
 
@@ -12,7 +15,7 @@ Input.inputs([Var("x"),])
 Hidden = Layer(5)
 Hidden.dense_append_to(Input)
 # Hidden_two = Layer(3)
-# Hidden_two.dense_append_to(Hidden)
+# Hidden_two.dense_append_to(Hidden,ReLU)
 Condense = Layer(1)
 Condense.dense_append_to(Hidden)
 Output = Loss()
@@ -83,6 +86,9 @@ class TwoDPlotter:
 
         
 
-plotter = TwoDPlotter(x,y)
+# plotter = TwoDPlotter(x,y, saving=True)
 # with plotter.save('nn_anim.mp4'):
+    # Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
+
+plotter = TwoDPlotter(x,y)
 Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
