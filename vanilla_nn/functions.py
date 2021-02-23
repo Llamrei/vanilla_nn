@@ -1,5 +1,6 @@
 # Dad: think about defining Name object and likewise +,-,/,x
 import logging
+from math import log
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -49,6 +50,7 @@ class Sum(Function):
 
 class Prod(Function):
     def __init__(self, a, b):
+        # Never actually use the self.func property
         self.func = lambda x, y: x * y
         self.args = (a, b)
 
@@ -83,6 +85,30 @@ class Neg(Function):
         return -1 * self.args[0].diff(with_respect_to, at)
 
 
+class Exp(Function):
+    def __init__(self, y, x):
+        self.func = lambda y, x: y ** x
+        self.args = (y, x)
+
+    def __str__(self):
+        return f"Exp{{ {self.args[0]},{self.args[1]} }}"
+
+    def eval(self, at):
+        logger.debug(f"Evaluating {self.args[0]}^{self.args[1]}")
+        return self.args[0].eval(at) ** self.args[1].eval(at)
+
+    def diff(self, with_respect_to, at):
+        wrt_s = f"d/d{with_respect_to}"
+        logger.debug(
+            f""
+        )
+        return self.eval(at)*(
+            log(self.args[0].eval(at))*self.args[1].diff(with_respect_to, at)
+            + 
+            self.args[1].eval(at)/self.args[0].eval(at)*self.args[1].diff(with_respect_to,at)
+            )
+
+
 class Const:
     def __init__(self, a):
         # Only allowed numbers
@@ -115,6 +141,29 @@ class Var:
         deriv = 1 if with_respect_to == self.name else 0
         logger.debug(f"Derivative of {self.name} w.r.t. {with_respect_to} is {deriv}")
         return deriv
+
+class ReLU(Function):
+    def __init__(self, x):
+        def func(x):
+            if x > 0:
+                return x
+            else:
+                return Const(0)
+        self.func = func
+        self.args = (x,)
+    
+    def __str__(self) -> str:
+        return f"Relu({self.args[0]})"
+
+    def eval(self, at):
+        if self.args[0].eval(at) > 0:
+            return self.args[0].eval(at)
+        else:
+            return Const(0).eval(at)
+
+    def diff(self, wrt, at):
+        return 1 if self.eval(at) > 0 else 0
+
 
 
 MSE = lambda prediction, label: Prod(
