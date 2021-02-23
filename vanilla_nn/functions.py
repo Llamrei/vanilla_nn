@@ -156,13 +156,13 @@ class ReLU(Function):
         return f"Relu({self.args[0]})"
 
     def eval(self, at):
-        if self.args[0].eval(at) > 0:
+        if self.args[0].eval(at) >= 0:
             return self.args[0].eval(at)
         else:
             return Const(0).eval(at)
 
     def diff(self, wrt, at):
-        return 1 if self.eval(at) > 0 else 0
+        return 1 if self.eval(at) >= 0 else 0
 
 
 
