@@ -28,8 +28,8 @@ x = [{"x":i - num_train_el/2} for i in range(num_train_el+1)]
 # Fit y = 10 + 5x
 # y = [10+5*i['x'] for i in x]
 
-# Fit y = 10 + 5*(x-2)
-y = [10+5*(i['x']-2) for i in x]
+# Fit y = -10 + 5*x
+y = [-10+5*(i['x']) for i in x]
 
 # Fit y = x^3
 # y = [i['x']*i['x']*i['x'] for i in x]
@@ -37,10 +37,12 @@ y = [10+5*(i['x']-2) for i in x]
 # Fit 15 to inputs (5,10)
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
+from matplotlib.animation import FFMpegWriter
+
 
 class TwoDPlotter:
 #TODO: with blitting
-    def __init__(self, x, y):
+    def __init__(self, x, y, saving=False):
         plt.ion()
         self.fig = plt.figure()
         self.real_ax = self.fig.subplots()
@@ -54,6 +56,10 @@ class TwoDPlotter:
         self.cache = self.fig.canvas.copy_from_bbox(self.fig.bbox)
         self.fig.canvas.draw()
 
+        self.saving = False
+        if saving:
+            self.writer = FFMpegWriter(fps=1)
+            self.saving = True
 
     def __call__(self, new_x, new_y):
         new_x = [i['x'] for i in new_x]
@@ -61,15 +67,22 @@ class TwoDPlotter:
         self.points.set_offsets(offsets)
         self.update_blit()
 
+        if self.saving:
+            self.writer.grab_frame()
+
     def update_blit(self):
         self.fig.canvas.restore_region(self.cache)
         self.real_ax.draw_artist(self.points)
         self.fig.canvas.blit(self.fig.bbox)
 
+    def save(self, filepath):
+        if self.saving:
+            return self.writer.saving(self.fig, filepath, 300)
+        else:
+            raise ValueError("Cannot save a plotter not configured to save")
+
         
 
-plotter = TwoDPlotter(x,y)
-Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
-print(
-Output.prev_layer[0].eval({"x":25, **Output.all_layer_weights})
-)
+plotter = TwoDPlotter(x,y, saving=True)
+with plotter.save('nn_anim.mp4'):
+    Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
