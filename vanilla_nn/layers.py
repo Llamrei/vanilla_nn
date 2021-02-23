@@ -23,7 +23,7 @@ positive_rand = partial(randrange,start=0,stop=10)
 
 class Layer:
     # Has a list of neurons which are all just Functions
-    def __init__(self, num_neurons, weight_init_func=random):
+    def __init__(self, num_neurons, weight_init_func=random, bias_init_func=random):
         self.neurons = [(None)] * num_neurons
         self.num_neurons = num_neurons
         self.nodes_namespace = None
@@ -31,6 +31,7 @@ class Layer:
         self.weights = dict()
         self.prev_layer = None
         self.weight_init_func = weight_init_func
+        self.bias_init_func = bias_init_func
 
     def __str__(self):
         # Careful that this code is seperate from usage in the dense_append_to
@@ -54,8 +55,8 @@ class Layer:
                 # weighted_previous_layer.append(Exp(prev_neuron, Var(weight)))
                 weighted_previous_layer.append(Prod(prev_neuron, Var(weight)))
                 self.weights[weight] = self.weight_init_func()
-                self.weights[bias] = self.weight_init_func()
-            self.neurons[neuron_idx] = Sum(reduce(Sum, weighted_previous_layer), Exp(Const(10),Var(bias)))
+                self.weights[bias] = self.bias_init_func()
+            self.neurons[neuron_idx] = Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10)))
 
     def inputs(self, neurons):
         assert len(neurons) == self.num_neurons
@@ -143,6 +144,13 @@ class Loss(Layer):
         dist = 1e10
         num_inputs = len(inputs_iter)
         grads = [None] * num_inputs
+        
+        if plotter:
+            predictions = [None] * num_inputs
+            for idx, inputs in enumerate(inputs_iter):
+                predictions[idx] = self.prev_layer.neurons[0].eval({**inputs, **self.all_layer_weights})
+            plotter(inputs_iter,predictions)
+
         while training or open_run:
             orig_weights = self.all_layer_weights
             for idx, inputs in enumerate(inputs_iter):
