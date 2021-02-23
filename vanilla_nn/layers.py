@@ -1,9 +1,11 @@
 from .functions import Sum
 from .functions import Prod
+from .functions import Exp
 from .functions import Const
 from .functions import Var
 from .functions import Neg
 from .functions import MSE
+from .functions import ReLU
 from .metrics import manhattan
 
 from functools import reduce
@@ -11,12 +13,13 @@ from functools import partial
 import logging
 import sys
 
-from random import random
+from random import random, randrange
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.FileHandler("debug.log"))
 
+positive_rand = partial(randrange,start=0,stop=10)
 
 class Layer:
     # Has a list of neurons which are all just Functions
@@ -47,9 +50,12 @@ class Layer:
                 previous_layer, previous_layer.nodes_namespace[0]
             ):
                 weight = f"w{prev_name}_{neuron_name}"
+                bias = f"b{neuron_name}"
+                # weighted_previous_layer.append(Exp(prev_neuron, Var(weight)))
                 weighted_previous_layer.append(Prod(prev_neuron, Var(weight)))
                 self.weights[weight] = self.weight_init_func()
-            self.neurons[neuron_idx] = reduce(Sum, weighted_previous_layer)
+                self.weights[bias] = self.weight_init_func()
+            self.neurons[neuron_idx] = Sum(reduce(Sum, weighted_previous_layer), Exp(Const(10),Var(bias)))
 
     def inputs(self, neurons):
         assert len(neurons) == self.num_neurons
