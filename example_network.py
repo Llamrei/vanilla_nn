@@ -83,6 +83,6 @@ class TwoDPlotter:
 
         
 
-plotter = TwoDPlotter(x,y, saving=True)
-with plotter.save('nn_anim.mp4'):
-    Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
+plotter = TwoDPlotter(x,y)
+# with plotter.save('nn_anim.mp4'):
+Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
