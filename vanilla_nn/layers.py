@@ -53,13 +53,17 @@ class Layer:
                 previous_layer, previous_layer.nodes_namespace[0]
             ):  
                 weight = f"w{prev_name}_{neuron_name}"
+                trans = f"t{prev_name}_{neuron_name}"
                 bias = f"b{neuron_name}"
+                param = f"p{prev_name}_{neuron_name}"
                 # TODO: Look into replacing linear weighting with alternative function?
                 # weighted_previous_layer.append(Exp(prev_neuron, Var(weight)))
-                weighted_previous_layer.append(Prod(prev_neuron, Var(weight)))
+                weighted_previous_layer.append(Prod(ReLU( Sum(prev_neuron, Var(trans) )), Var(weight)))
                 self.weights[weight] = self.weight_init_func()
                 self.weights[bias] = self.bias_init_func()
-            self.neurons[neuron_idx] = LReLU(Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10))))
+                self.weights[trans] = self.bias_init_func()
+                self.weights[param] = self.weight_init_func()
+            self.neurons[neuron_idx] = Sum(reduce(Sum, weighted_previous_layer), Prod(Var(bias),Const(10)))
 
     def inputs(self, neurons):
         assert len(neurons) == self.num_neurons
@@ -174,7 +178,8 @@ class Loss(Layer):
 
             if plotter:
                 plotter(inputs_iter,predictions)
-
+            
+            #TODO: Printing/keeping track of timestamps
             print(
                 f"Average Loss: {new_loss} ({percentage_loss_change}%) | weight_movement: {percentage_dist_change}%"
             )

@@ -1,6 +1,3 @@
-from functools import reduce
-
-
 def manhattan(a: dict, b: dict):
     dist = 0
     for key in a:
