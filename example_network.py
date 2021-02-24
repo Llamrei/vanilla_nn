@@ -44,7 +44,7 @@ from matplotlib.animation import FFMpegWriter
 
 
 class TwoDPlotter:
-#TODO: with blitting
+#TODO: Track real time between plots and maybe also loss?
     def __init__(self, x, y, saving=False):
         plt.ion()
         self.fig = plt.figure()
@@ -86,9 +86,10 @@ class TwoDPlotter:
 
         
 
-# plotter = TwoDPlotter(x,y, saving=True)
-# with plotter.save('nn_anim.mp4'):
-    # Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
+plotter = TwoDPlotter(x,y, saving=True)
+with plotter.save('nn_anim.mp4'):
+    #TODO: Think about a training algorithm that can tell if loss went up (over a rolling threshold?) -> took too large a step in gradient direction
+    Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
 
-plotter = TwoDPlotter(x,y)
-Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
+# plotter = TwoDPlotter(x,y)
+# Output.train(x, y, plotter=plotter, learning_rate=0.001, open_run=True)
